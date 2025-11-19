@@ -88,7 +88,6 @@ Data columns (total 12 columns):
 
 dtypes: float64(5), object(7)
 
-memory usage: 56.4+ KB
 
 
 
@@ -460,8 +459,6 @@ print("Generated monthly\_sales\_trend.png")
 
 Code output
 
-Cleaned data saved to cleaned\_dataset.csv
-
 
 
 --- Descriptive Statistics for Numerical Columns ---
@@ -507,17 +504,6 @@ Monthly Sales Data:
 | 2024-05     | 391493        |
 
 | 2024-06     | 226880        |
-
-Generated monthly\_sales\_trend.png
-
-
-
-
-
-cleaned\_dataset
-
-CSV
-
 
 
 
@@ -646,9 +632,6 @@ Top 5 Product Categories:
 
 | Books             | 249811        |
 
-Generated top\_5\_product\_categories.png
-
-
 
 --- Analyzing Top 10 Countries by Sales ---
 
@@ -677,15 +660,6 @@ Top 10 Countries by Sales:
 | GERMANY   | 19455         |
 
 | UK        | 9216          |
-
-Generated top\_10\_countries\_sales.png
-
-
-
-
-
-
-
 
 
 
@@ -854,7 +828,6 @@ Top 10 Countries by Sales (Standardized):
 
 | Nan       | 6933          |
 
-Generated top\_10\_countries\_sales\_revised.png
 
 
 
@@ -876,7 +849,7 @@ Customer Rating Counts:
 
 | 5  | 56       |
 
-Generated customer\_rating\_distribution.png
+
 
 
 
@@ -894,7 +867,6 @@ Delivery Status Counts:
 
 | Delivered  | 122              |
 
-Generated delivery\_status\_counts.png
 
 
 
@@ -935,9 +907,7 @@ Removing rows that still had missing critical information (like TotalAmount or D
 The final, cleaned dataset has 382 complete records
 
 
-
 Here is a summary of the analysis:
-
 
 
 Sales Performance
@@ -961,7 +931,6 @@ Average Total Amount per Order: $4,268.77
 Total Revenue (Jan-Jun 2024): $1,630,671
 
 
-
 Monthly Sales Trend
 
 Sales peaked in March and May 2024, with March being the strongest month. Sales were lowest in February.
@@ -981,10 +950,6 @@ YearMonth	TotalAmount
 2024-05	$391,493
 
 2024-06	$226,880
-
-
-
-EXPORT TO SHEETS
 
 
 
@@ -1029,15 +994,9 @@ Unknown	$100,399
 Nan	$6,933
 
 
-
-EXPORT TO SHEETS
-
-
-
 Customer Ratings \& Delivery Status
 
 The customer ratings are normally distributed, with 3-star and 4-star ratings being the most common. The delivery statuses show a relatively even split, though Returned items are slightly more frequent than Delivered or In Transit orders.
-
 
 
 Rating	Number of Orders
@@ -1053,11 +1012,6 @@ Rating	Number of Orders
 5	56
 
 
-
-EXPORT TO SHEETS
-
-
-
 Delivery Status	Number of Orders
 
 Returned	133
@@ -1065,4 +1019,5 @@ Returned	133
 In Transit	127
 
 Delivered	122
+
 
