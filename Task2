@@ -1,0 +1,94 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.impute import SimpleImputer
+
+# Initialize df to None, so it's always defined
+df = None
+
+# 1. Load the Dataset
+try:
+    df = pd.read_csv('dataset.csv')
+    print("✅ Dataset loaded successfully.")
+except FileNotFoundError:
+    print("❌ dataset.csv not found. Please ensure the file is in the same directory.")
+    # Removed exit() as it can cause NameError in Colab if subsequent code runs
+    # Further processing will be skipped due to df being None
+
+# Only proceed if the dataset was loaded successfully
+if df is not None:
+    # --- 2. Exploratory Data Analysis & Cleaning ---
+
+    print(f"\nOriginal Dataset Shape: {df.shape}")
+
+    # Drop irrelevant columns for prediction (IDs, Dates, and Text Reviews)
+    # We drop 'Date' because it requires complex time-series feature engineering,
+    # which is outside the scope of a basic model.
+    cols_to_drop = ['OrderID', 'CustomerID', 'Date', 'Review']
+    df = df.drop(columns=cols_to_drop, errors='ignore')
+
+    # Handling Missing Values
+    # - Numerical columns (Quantity, UnitPrice, Rating): Fill with the Median
+    num_cols = ['Quantity', 'UnitPrice', 'TotalAmount', 'Rating']
+    num_imputer = SimpleImputer(strategy='median')
+    df[num_cols] = num_imputer.fit_transform(df[num_cols])
+
+    # - Categorical columns (Country, etc.): Fill with the "Most Frequent" value (Mode)
+    cat_cols = ['ProductCategory', 'PaymentMethod', 'Country']
+    cat_imputer = SimpleImputer(strategy='most_frequent')
+    df[cat_cols] = cat_imputer.fit_transform(df[cat_cols])
+
+    # Drop rows where the Target (DeliveryStatus) is missing, if any
+    df = df.dropna(subset=['DeliveryStatus'])
+
+    print("✅ Data cleaning complete.")
+
+    # --- 3. Feature Engineering ---
+
+    # Encode Categorical Variables (Convert text to numbers)
+    # We use LabelEncoder for the target and GetDummies (One-Hot) for features
+    le = LabelEncoder()
+    df['DeliveryStatus'] = le.fit_transform(df['DeliveryStatus'])
+
+    print(f"Target Classes: {dict(zip(le.transform(le.classes_), le.classes_))}")
+
+    # One-Hot Encode the remaining categorical features
+    df_encoded = pd.get_dummies(df, columns=['ProductCategory', 'PaymentMethod', 'Country'], drop_first=True)
+
+    # --- 4. Splitting the Data ---
+
+    X = df_encoded.drop('DeliveryStatus', axis=1) # Features
+    y = df_encoded['DeliveryStatus']              # Target
+
+    # Split into Training (80%) and Testing (20%) sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # --- 5. Model Training ---
+
+    print("\n🚀 Training Random Forest Classifier...")
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+
+    # --- 6. Evaluation ---
+
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+
+    print(f"\n🏆 Model Accuracy: {accuracy:.2%}")
+    print("\n--- Classification Report ---")
+    print(classification_report(y_test, y_pred, target_names=le.classes_))
+
+    # --- 7. Feature Importance Analysis ---
+    # Let's see what factors actually drive the Delivery Status
+    feature_importances = pd.DataFrame({
+        'Feature': X.columns,
+        'Importance': model.feature_importances_
+    }).sort_values(by='Importance', ascending=False)
+
+    print("\n--- Top 5 Factors Influencing Delivery Status ---")
+    print(feature_importances.head(5))
+else:
+    print("\nSkipping further processing as the dataset was not loaded.")
