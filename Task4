@@ -1,0 +1,147 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import nltk
+from textblob import TextBlob
+from collections import Counter
+
+# Download necessary NLTK data for TextBlob
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab')
+
+try:
+    # TextBlob often looks for the English specific tagger
+    nltk.data.find('taggers/averaged_perceptron_tagger_eng')
+except LookupError:
+    # If not found, download the specific English tagger
+    nltk.download('averaged_perceptron_tagger_eng')
+
+# --- 1. Load and Clean Data ---
+df = None # Initialize df to None to prevent NameError if file not found
+try:
+    df = pd.read_csv('dataset.csv')
+    print("✅ Dataset loaded successfully.")
+except FileNotFoundError:
+    print("❌ dataset.csv not found. Please ensure the file is in the same directory.")
+    # The original code had exit(), which didn't prevent the NameError.
+    # We will now rely on the 'if df is not None' check below instead.
+
+# --- 2. Define Sentiment Functions ---
+# These functions do not depend on df being loaded to be *defined*, only to be *called*.
+def get_sentiment_metrics(text):
+    """
+    Returns a tuple of (Polarity, Subjectivity, Sentiment_Category)
+    """
+    blob = TextBlob(str(text))
+    polarity = blob.sentiment.polarity
+    subjectivity = blob.sentiment.subjectivity
+
+    if polarity > 0.1:
+        category = 'Positive'
+    elif polarity < -0.1:
+        category = 'Negative'
+    else:
+        category = 'Neutral'
+
+    return polarity, subjectivity, category
+
+# --- 3. Keyword Extraction Helper Function ---
+def get_top_adjectives(text_series, n=5):
+    words = []
+    for text in text_series:
+        blob = TextBlob(str(text))
+        # extract words tagged as Adjectives (JJ)
+        words.extend([word.lower() for word, tag in blob.tags if tag.startswith('JJ')])
+    return Counter(words).most_common(n)
+
+
+# --- Execute analysis only if DataFrame loaded successfully ---
+if df is not None:
+    # Drop rows where 'Review' is missing
+    initial_count = len(df)
+    df = df.dropna(subset=['Review'])
+    print(f"ℹ️  Analyzing {len(df)} reviews (Dropped {initial_count - len(df)} empty rows).")
+
+    # Apply the function
+    print("🧠 Processing reviews with TextBlob...")
+    df[['Polarity', 'Subjectivity', 'Sentiment']] = df['Review'].apply(
+        lambda x: pd.Series(get_sentiment_metrics(x))
+    )
+
+    # Let's find the most common adjectives used in Positive vs Negative reviews
+    top_pos_adj = get_top_adjectives(df[df['Sentiment'] == 'Positive']['Review'])
+    top_neg_adj = get_top_adjectives(df[df['Sentiment'] == 'Negative']['Review'])
+
+    print("\n--- 🔍 Top Adjectives Used ---")
+    print(f"Positive Reviews: {top_pos_adj}")
+    print(f"Negative Reviews: {top_neg_adj}")
+
+    # --- 4. Visualization ---
+    sns.set_style("whitegrid")
+    plt.figure(figsize=(12, 10))
+
+    # Plot 1: Sentiment Distribution
+    plt.subplot(2, 2, 1)
+    sns.countplot(x='Sentiment', data=df, palette='viridis', order=['Positive', 'Neutral', 'Negative'])
+    plt.title('Distribution of Sentiment Categories')
+
+    # Plot 2: Subjectivity Distribution
+    plt.subplot(2, 2, 2)
+    sns.histplot(df['Subjectivity'], bins=20, color='orange', kde=True)
+    plt.title('Subjectivity of Reviews\n(0=Fact, 1=Opinion)')
+    plt.xlabel('Subjectivity Score')
+
+    # Plot 3: Polarity vs Rating (Validation)
+    plt.subplot(2, 2, 3)
+    sns.boxplot(x='Rating', y='Polarity', data=df, palette='coolwarm')
+    plt.title('Does Sentiment Match Star Rating?')
+
+    # Plot 4: Polarity vs Subjectivity Scatter
+    plt.subplot(2, 2, 4)
+    sns.scatterplot(x='Subjectivity', y='Polarity', hue='Sentiment', data=df, palette='viridis', alpha=0.6)
+    plt.title('Polarity vs. Subjectivity')
+    plt.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+
+    plt.tight_layout()
+    plt.show()
+
+    # --- 5. Sample Output ---
+    print("\n--- 📝 Sample Analysis ---")
+    print(df[['Review', 'Rating', 'Polarity', 'Subjectivity', 'Sentiment']].head(5).to_string(index=False))
+else:
+    print("🚫 Analysis skipped: dataset.csv was not found.")
+
+
+[nltk_data] Downloading package averaged_perceptron_tagger_eng to
+[nltk_data]     /root/nltk_data...
+[nltk_data]   Unzipping taggers/averaged_perceptron_tagger_eng.zip.
+✅ Dataset loaded successfully.
+ℹ️  Analyzing 570 reviews (Dropped 30 empty rows).
+🧠 Processing reviews with TextBlob...
+
+--- 🔍 Top Adjectives Used ---
+Positive Reviews: [('good', 61), ('fast', 52), ('excellent', 51), ('nice', 51)]
+Negative Reviews: [('worst', 74), ('terrible', 70), ('happy', 56)]
+/tmp/ipython-input-2646473792.py:87: FutureWarning: 
+
+Passing `palette` without assigning `hue` is deprecated and will be removed in v0.14.0. Assign the `x` variable to `hue` and set `legend=False` for the same effect.
+
+  sns.countplot(x='Sentiment', data=df, palette='viridis', order=['Positive', 'Neutral', 'Negative'])
+/tmp/ipython-input-2646473792.py:98: FutureWarning: 
+
+Passing `palette` without assigning `hue` is deprecated and will be removed in v0.14.0. Assign the `x` variable to `hue` and set `legend=False` for the same effect.
+
+  sns.boxplot(x='Rating', y='Polarity', data=df, palette='coolwarm')
+
+
+--- 📝 Sample Analysis ---
+                             Review  Rating  Polarity  Subjectivity Sentiment
+Terrible service, not buying again.     3.0    -1.000         1.000  Negative
+     Very good quality and support.     4.0     0.910         0.780  Positive
+   Excellent packaging and quality.     4.0     1.000         1.000  Positive
+   Great product and fast delivery!     2.0     0.525         0.675  Positive
+    Fast shipping and nice product.     2.0     0.400         0.800  Positive
+
+
